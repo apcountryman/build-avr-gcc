@@ -39,8 +39,8 @@ function message()
 function display_help_text()
 {
     echo "NAME"
-    echo "    $MNEMONIC - Build avr-gcc from binutils 2.32, gcc 8.3.0, and avr-libc"
-    echo "        2.0.0."
+    echo "    $MNEMONIC - Build avr-gcc from gmp 6.1.0, mpfr 3.1.4, mpc 1.03, isl 0.18,"
+    echo "        binutils 2.32, gcc 8.3.0, and avr-libc 2.0.0."
     echo "SYNOPSIS"
     echo "    $MNEMONIC --help"
     echo "    $MNEMONIC --version"
