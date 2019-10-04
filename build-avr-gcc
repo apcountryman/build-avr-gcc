@@ -44,14 +44,22 @@ function display_help_text()
     echo "SYNOPSIS"
     echo "    $MNEMONIC --help"
     echo "    $MNEMONIC --version"
+    echo "    $MNEMONIC --download <component>"
     echo "OPTIONS"
+    echo "    --download <component>"
+    echo "        Download the specified component."
     echo "    --help"
     echo "        Display this help text."
     echo "    --version"
     echo "        Display the version of this script."
+    echo "    <component>"
+    echo "        The component to to execute an action for. The following components are"
+    echo "        supported:"
+    echo "            gmp"
     echo "EXAMPLES"
     echo "    $MNEMONIC --help"
     echo "    $MNEMONIC --version"
+    echo "    $MNEMONIC --download gmp"
 }
 
 function display_version()
@@ -61,11 +69,48 @@ function display_version()
     echo "$MNEMONIC, version $version"
 }
 
+function download_component()
+{
+    local param_component; declare -r param_component="$1"
+
+    if [[ ! -d "$BUILD_DIRECTORY" ]]; then
+        if ! mkdir -p "$BUILD_DIRECTORY"; then
+            error "build directory creation failure, aborting"
+            abort
+        fi
+    fi
+
+    if ! cd "$BUILD_DIRECTORY"; then
+        error "unable to enter build directory, aborting"
+        abort
+    fi
+
+    local download_url;
+
+    case $param_component in
+        gmp)
+            declare -r download_url="ftp://gcc.gnu.org/pub/gcc/infrastructure/gmp-6.1.0.tar.bz2"
+            rm -rf gmp*.tar.*
+            ;;
+        *)
+            error "$param_component is not a supported component, aborting"
+            abort
+            ;;
+    esac
+
+    if ! wget "$download_url"; then
+        error "$param_component download failure, aborting"
+        abort
+    fi
+}
+
 function main()
 {
     declare -r SCRIPT=$( readlink -f $0 )
-    declare -r REPOSITORY=$( dirname $SCRIPT )/../..
+    declare -r REPOSITORY=$( dirname $SCRIPT )
     declare -r MNEMONIC=$( basename $SCRIPT )
+
+    declare -r BUILD_DIRECTORY="$REPOSITORY"/build
 
     while [[ $# -gt 0 ]]; do
         local argument; argument="$1"
@@ -78,6 +123,15 @@ function main()
                 ;;
             --version)
                 display_version
+                exit
+                ;;
+            --download)
+                if [[ $# -eq 0 ]]; then
+                    error "component not specified, aborting"
+                    abort
+                fi
+
+                download_component "$1"
                 exit
                 ;;
             --*)
