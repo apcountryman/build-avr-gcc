@@ -46,24 +46,34 @@ function display_help_text()
     echo "    $MNEMONIC --version"
     echo "    $MNEMONIC --download <component>"
     echo "    $MNEMONIC --extract <component>"
+    echo "    $MNEMONIC --install-prefix <install-prefix> --configure <component>"
     echo "OPTIONS"
+    echo "    --configure <component>"
+    echo "        Configure the specified component."
     echo "    --download <component>"
     echo "        Download the specified component."
     echo "    --extract <component>"
     echo "        Extract the specified component."
     echo "    --help"
     echo "        Display this help text."
+    echo "    --install-prefix <install-prefix>"
+    echo "        Use the specified install prefix."
     echo "    --version"
     echo "        Display the version of this script."
     echo "    <component>"
     echo "        The component to to execute an action for. The following components are"
     echo "        supported:"
     echo "            gmp"
+    echo "    <install-prefix>"
+    echo "        The install prefix. Must be a directory that exists prior to execution"
+    echo "        of this script. <install-prefix>/bin must be in \$PATH prior to"
+    echo "        execution of this script."
     echo "EXAMPLES"
     echo "    $MNEMONIC --help"
     echo "    $MNEMONIC --version"
     echo "    $MNEMONIC --download gmp"
     echo "    $MNEMONIC --extract gmp"
+    echo "    $MNEMONIC --install-prefix ~/bin/avr-gcc --configure gmp"
 }
 
 function display_version()
@@ -125,6 +135,56 @@ function extract_component()
     fi
 }
 
+function configure_component()
+{
+    local param_component; declare -r param_component="$1"
+
+    if [[ -z "$INSTALL_PREFIX" ]]; then
+        error "install prefix not specified, aborting"
+        abort
+    fi
+
+    local configuration;
+
+    case $param_component in
+        gmp)
+            declare -r configuration=" \
+                --prefix=$INSTALL_PREFIX \
+                --disable-shared \
+                --enable-static \
+                --enable-cxx \
+                CPPFLAGS=-fexceptions \
+            "
+            ;;
+        *)
+            error "$param_component is not a supported component, aborting"
+            abort
+            ;;
+    esac
+
+    if ! cd "$BUILD_DIRECTORY"/"$param_component"*/; then
+        error "unable to enter $param_component directory, aborting"
+        abort
+    fi
+
+    rm -rf build
+
+    if ! mkdir build; then
+        error "$param_component build_directory creation failure, aborting"
+        abort
+    fi
+
+    if ! cd "$BUILD_DIRECTORY"/"$param_component"*/build; then
+        error "unable to enter $param_component build directory, aborting"
+        abort
+    fi
+
+    if ! ../configure $configuration; then
+        error "$param_component configuration failure, aborting"
+        abort
+    fi
+}
+
 function main()
 {
     declare -r SCRIPT=$( readlink -f $0 )
@@ -135,7 +195,12 @@ function main()
 
     local action;
 
-    while [[ $# -gt 0 ]]; do
+    while true; do
+        if [[ $# -eq 0 ]]; then
+            error "invalid usage, aborting"
+            abort
+        fi
+
         local argument; argument="$1"
         shift
 
@@ -148,6 +213,15 @@ function main()
                 display_version
                 exit
                 ;;
+            --install-prefix)
+                if [[ $# -eq 0 ]]; then
+                    error "install prefix not specified, aborting"
+                    abort
+                fi
+
+                declare -r INSTALL_PREFIX="$1"
+                shift
+                ;;
             --download)
                 declare -r action=download_component
                 break
@@ -155,6 +229,10 @@ function main()
             --extract)
                 declare -r action=extract_component
                 break
+                ;;
+            --configure)
+                declare -r action=configure_component
+                break;
                 ;;
             --*)
                 ;&
