@@ -47,7 +47,10 @@ function display_help_text()
     echo "    $MNEMONIC --download <component>"
     echo "    $MNEMONIC --extract <component>"
     echo "    $MNEMONIC --install-prefix <install-prefix> --configure <component>"
+    echo "    $MNEMONIC [--jobs <jobs>] --build <component>"
     echo "OPTIONS"
+    echo "    --build <component>"
+    echo "        Build the specified component."
     echo "    --configure <component>"
     echo "        Configure the specified component."
     echo "    --download <component>"
@@ -58,6 +61,10 @@ function display_help_text()
     echo "        Display this help text."
     echo "    --install-prefix <install-prefix>"
     echo "        Use the specified install prefix."
+    echo "    --jobs <jobs>"
+    echo "        Specify the number of make jobs to use when building, checking, and/or"
+    echo "        installing. If the number of jobs to use is not specified, nproc - 1"
+    echo "        jobs will be used."
     echo "    --version"
     echo "        Display the version of this script."
     echo "    <component>"
@@ -68,12 +75,16 @@ function display_help_text()
     echo "        The install prefix. Must be a directory that exists prior to execution"
     echo "        of this script. <install-prefix>/bin must be in \$PATH prior to"
     echo "        execution of this script."
+    echo "    <jobs>"
+    echo "        The number of make jobs to use."
     echo "EXAMPLES"
     echo "    $MNEMONIC --help"
     echo "    $MNEMONIC --version"
     echo "    $MNEMONIC --download gmp"
     echo "    $MNEMONIC --extract gmp"
     echo "    $MNEMONIC --install-prefix ~/bin/avr-gcc --configure gmp"
+    echo "    $MNEMONIC --build gmp"
+    echo "    $MNEMONIC --jobs 1 --build gmp"
 }
 
 function display_version()
@@ -185,6 +196,21 @@ function configure_component()
     fi
 }
 
+function build_component()
+{
+    local param_component; declare -r param_component="$1"
+
+    if ! cd "$BUILD_DIRECTORY"/"$param_component"*/build; then
+        error "unable to enter $param_component build directory, aborting"
+        abort
+    fi
+
+    if ! make "$JOBS"; then
+        error "$param_component build failure, aborting"
+        abort
+    fi
+}
+
 function main()
 {
     declare -r SCRIPT=$( readlink -f $0 )
@@ -192,6 +218,8 @@ function main()
     declare -r MNEMONIC=$( basename $SCRIPT )
 
     declare -r BUILD_DIRECTORY="$REPOSITORY"/build
+
+    JOBS="-j$(( $( nproc ) - 1 ))"
 
     local action;
 
@@ -222,6 +250,15 @@ function main()
                 declare -r INSTALL_PREFIX="$1"
                 shift
                 ;;
+            --jobs)
+                if [[ $# -eq 0 ]]; then
+                    error "make job count not specified, aborting"
+                    abort
+                fi
+
+                JOBS="-j$1"
+                shift
+                ;;
             --download)
                 declare -r action=download_component
                 break
@@ -232,6 +269,10 @@ function main()
                 ;;
             --configure)
                 declare -r action=configure_component
+                break;
+                ;;
+            --build)
+                declare -r action=build_component
                 break;
                 ;;
             --*)
