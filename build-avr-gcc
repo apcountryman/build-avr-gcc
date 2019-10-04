@@ -45,9 +45,12 @@ function display_help_text()
     echo "    $MNEMONIC --help"
     echo "    $MNEMONIC --version"
     echo "    $MNEMONIC --download <component>"
+    echo "    $MNEMONIC --extract <component>"
     echo "OPTIONS"
     echo "    --download <component>"
     echo "        Download the specified component."
+    echo "    --extract <component>"
+    echo "        Extract the specified component."
     echo "    --help"
     echo "        Display this help text."
     echo "    --version"
@@ -60,6 +63,7 @@ function display_help_text()
     echo "    $MNEMONIC --help"
     echo "    $MNEMONIC --version"
     echo "    $MNEMONIC --download gmp"
+    echo "    $MNEMONIC --extract gmp"
 }
 
 function display_version()
@@ -104,6 +108,23 @@ function download_component()
     fi
 }
 
+function extract_component()
+{
+    local param_component; declare -r param_component="$1"
+
+    if ! cd "$BUILD_DIRECTORY"; then
+        error "unable to enter build directory, aborting"
+        abort
+    fi
+
+    rm -rf "$param_component"*/
+
+    if ! tar -xf "$param_component"*.tar.*; then
+        error "$param_component extraction failure, aborting"
+        abort
+    fi
+}
+
 function main()
 {
     declare -r SCRIPT=$( readlink -f $0 )
@@ -111,6 +132,8 @@ function main()
     declare -r MNEMONIC=$( basename $SCRIPT )
 
     declare -r BUILD_DIRECTORY="$REPOSITORY"/build
+
+    local action;
 
     while [[ $# -gt 0 ]]; do
         local argument; argument="$1"
@@ -126,13 +149,12 @@ function main()
                 exit
                 ;;
             --download)
-                if [[ $# -eq 0 ]]; then
-                    error "component not specified, aborting"
-                    abort
-                fi
-
-                download_component "$1"
-                exit
+                declare -r action=download_component
+                break
+                ;;
+            --extract)
+                declare -r action=extract_component
+                break
                 ;;
             --*)
                 ;&
@@ -146,6 +168,13 @@ function main()
                 ;;
         esac
     done
+
+    if [[ $# -eq 0 ]]; then
+        error "component not specified, aborting"
+        abort
+    fi
+
+    "$action" "$1"
 }
 
 main "$@"
