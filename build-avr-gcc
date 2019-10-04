@@ -48,9 +48,12 @@ function display_help_text()
     echo "    $MNEMONIC --extract <component>"
     echo "    $MNEMONIC --install-prefix <install-prefix> --configure <component>"
     echo "    $MNEMONIC [--jobs <jobs>] --build <component>"
+    echo "    $MNEMONIC [--jobs <jobs>] --check <component>"
     echo "OPTIONS"
     echo "    --build <component>"
     echo "        Build the specified component."
+    echo "    --check <component>"
+    echo "        Check the specified component."
     echo "    --configure <component>"
     echo "        Configure the specified component."
     echo "    --download <component>"
@@ -85,6 +88,8 @@ function display_help_text()
     echo "    $MNEMONIC --install-prefix ~/bin/avr-gcc --configure gmp"
     echo "    $MNEMONIC --build gmp"
     echo "    $MNEMONIC --jobs 1 --build gmp"
+    echo "    $MNEMONIC --check gmp"
+    echo "    $MNEMONIC --jobs 1 --check gmp"
 }
 
 function display_version()
@@ -211,6 +216,21 @@ function build_component()
     fi
 }
 
+function check_component()
+{
+    local param_component; declare -r param_component="$1"
+
+    if ! cd "$BUILD_DIRECTORY"/"$param_component"*/build; then
+        error "unable to enter $param_component build directory, aborting"
+        abort
+    fi
+
+    if ! make "$JOBS" check; then
+        error "$param_component check failure, aborting"
+        abort
+    fi
+}
+
 function main()
 {
     declare -r SCRIPT=$( readlink -f $0 )
@@ -273,6 +293,10 @@ function main()
                 ;;
             --build)
                 declare -r action=build_component
+                break;
+                ;;
+            --check)
+                declare -r action=check_component
                 break;
                 ;;
             --*)
