@@ -36,6 +36,20 @@ function message()
     echo -n "$MNEMONIC: $param_content"
 }
 
+function display_help_text()
+{
+    echo "NAME"
+    echo "    $MNEMONIC - Build avr-gcc from binutils 2.32, gcc 8.3.0, and avr-libc"
+    echo "        2.0.0."
+    echo "SYNOPSIS"
+    echo "    $MNEMONIC --help"
+    echo "OPTIONS"
+    echo "    --help"
+    echo "        Display this help text."
+    echo "EXAMPLES"
+    echo "    $MNEMONIC --help"
+}
+
 function main()
 {
     declare -r SCRIPT=$( readlink -f $0 )
@@ -47,6 +61,10 @@ function main()
         shift
 
         case $argument in
+            --help)
+                display_help_text
+                exit
+                ;;
             --*)
                 ;&
             -*)
