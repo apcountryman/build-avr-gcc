@@ -43,11 +43,22 @@ function display_help_text()
     echo "        2.0.0."
     echo "SYNOPSIS"
     echo "    $MNEMONIC --help"
+    echo "    $MNEMONIC --version"
     echo "OPTIONS"
     echo "    --help"
     echo "        Display this help text."
+    echo "    --version"
+    echo "        Display the version of this script."
     echo "EXAMPLES"
     echo "    $MNEMONIC --help"
+    echo "    $MNEMONIC --version"
+}
+
+function display_version()
+{
+    local version; declare -r version=$( git describe --always --dirty --broken )
+
+    echo "$MNEMONIC, version $version"
 }
 
 function main()
@@ -63,6 +74,10 @@ function main()
         case $argument in
             --help)
                 display_help_text
+                exit
+                ;;
+            --version)
+                display_version
                 exit
                 ;;
             --*)
