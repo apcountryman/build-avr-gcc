@@ -39,7 +39,7 @@ function message()
 function display_help_text()
 {
     echo "NAME"
-    echo "    $MNEMONIC - Build avr-gcc from gmp 6.1.0, mpfr 3.1.4, mpc 1.03, isl 0.18,"
+    echo "    $MNEMONIC - Build avr-gcc from gmp 6.1.0, mpfr 3.1.4, mpc 1.0.3, isl 0.18,"
     echo "        binutils 2.32, gcc 8.3.0, and avr-libc 2.0.0."
     echo "SYNOPSIS"
     echo "    $MNEMONIC --help"
@@ -78,6 +78,7 @@ function display_help_text()
     echo "        supported:"
     echo "            gmp"
     echo "            mpfr"
+    echo "            mpc"
     echo "    <install-prefix>"
     echo "        The install prefix. Must be a directory that exists prior to execution"
     echo "        of this script. <install-prefix>/bin must be in \$PATH prior to"
@@ -132,6 +133,10 @@ function download_component()
             declare -r download_url="ftp://gcc.gnu.org/pub/gcc/infrastructure/mpfr-3.1.4.tar.bz2"
             rm -rf mpfr*.tar.*
             ;;
+        mpc)
+            declare -r download_url="ftp://gcc.gnu.org/pub/gcc/infrastructure/mpc-1.0.3.tar.gz"
+            rm -rf mpfr*.tar.*
+            ;;
         *)
             error "$param_component is not a supported component, aborting"
             abort
@@ -183,6 +188,14 @@ function configure_component()
             "
             ;;
         mpfr)
+            declare -r configuration=" \
+                --prefix=$INSTALL_PREFIX \
+                --disable-shared \
+                --enable-static \
+                --with-gmp=$INSTALL_PREFIX \
+            "
+            ;;
+        mpc)
             declare -r configuration=" \
                 --prefix=$INSTALL_PREFIX \
                 --disable-shared \
