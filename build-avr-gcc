@@ -86,6 +86,7 @@ function display_help_text()
     echo "            isl"
     echo "            binutils"
     echo "            gcc"
+    echo "            avr-libc"
     echo "    <install-prefix>"
     echo "        The install prefix. Must be a directory that exists prior to execution"
     echo "        of this script. <install-prefix>/bin must be in \$PATH prior to"
@@ -157,6 +158,10 @@ function download_component()
         gcc)
             declare -r download_url="ftp://gcc.gnu.org/pub/gcc/releases/gcc-8.3.0/gcc-8.3.0.tar.xz"
             rm -f gcc*.tar.*
+            ;;
+        avr-libc)
+            declare -r download_url="http://download.savannah.gnu.org/releases/avr-libc/avr-libc-2.0.0.tar.bz2"
+            rm -f avr-libc*.tar.*
             ;;
         *)
             error "$param_component is not a supported component, aborting"
@@ -261,6 +266,12 @@ function configure_component()
                 --with-mpfr=$INSTALL_PREFIX \
                 --with-mpc=$INSTALL_PREFIX \
                 --with-isl=$INSTALL_PREFIX \
+            "
+            ;;
+        avr-libc)
+            declare -r configuration=" \
+                --prefix=$INSTALL_PREFIX \
+                --host=avr \
             "
             ;;
         *)
@@ -392,6 +403,7 @@ function main()
                 download_component isl
                 download_component binutils
                 download_component gcc
+                download_component avr-libc
 
                 extract_component gmp
                 extract_component mpfr
@@ -399,6 +411,7 @@ function main()
                 extract_component isl
                 extract_component binutils
                 extract_component gcc
+                extract_component avr-libc
 
                 configure_component gmp
                 build_component gmp
@@ -429,6 +442,11 @@ function main()
                 build_component gcc
                 check_component gcc
                 install_component gcc
+
+                configure_component avr-libc
+                build_component avr-libc
+                check_component avr-libc
+                install_component avr-libc
 
                 exit
                 ;;
