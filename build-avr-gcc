@@ -49,6 +49,7 @@ function display_help_text()
     echo "    $MNEMONIC --install-prefix <install-prefix> --configure <component>"
     echo "    $MNEMONIC [--jobs <jobs>] --build <component>"
     echo "    $MNEMONIC [--jobs <jobs>] --check <component>"
+    echo "    $MNEMONIC [--jobs <jobs>] --install <component>"
     echo "OPTIONS"
     echo "    --build <component>"
     echo "        Build the specified component."
@@ -62,6 +63,8 @@ function display_help_text()
     echo "        Extract the specified component."
     echo "    --help"
     echo "        Display this help text."
+    echo "    --install <component>"
+    echo "        Install the specified component."
     echo "    --install-prefix <install-prefix>"
     echo "        Use the specified install prefix."
     echo "    --jobs <jobs>"
@@ -90,6 +93,8 @@ function display_help_text()
     echo "    $MNEMONIC --jobs 1 --build gmp"
     echo "    $MNEMONIC --check gmp"
     echo "    $MNEMONIC --jobs 1 --check gmp"
+    echo "    $MNEMONIC --install gmp"
+    echo "    $MNEMONIC --jobs 1 --install gmp"
 }
 
 function display_version()
@@ -231,6 +236,21 @@ function check_component()
     fi
 }
 
+function install_component()
+{
+    local param_component; declare -r param_component="$1"
+
+    if ! cd "$BUILD_DIRECTORY"/"$param_component"*/build; then
+        error "unable to enter $param_component build directory, aborting"
+        abort
+    fi
+
+    if ! make "$JOBS" install; then
+        error "$param_component install failure, aborting"
+        abort
+    fi
+}
+
 function main()
 {
     declare -r SCRIPT=$( readlink -f $0 )
@@ -297,6 +317,10 @@ function main()
                 ;;
             --check)
                 declare -r action=check_component
+                break;
+                ;;
+            --install)
+                declare -r action=install_component
                 break;
                 ;;
             --*)
