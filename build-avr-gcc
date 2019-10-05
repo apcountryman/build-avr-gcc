@@ -77,6 +77,7 @@ function display_help_text()
     echo "        The component to to execute an action for. The following components are"
     echo "        supported:"
     echo "            gmp"
+    echo "            mpfr"
     echo "    <install-prefix>"
     echo "        The install prefix. Must be a directory that exists prior to execution"
     echo "        of this script. <install-prefix>/bin must be in \$PATH prior to"
@@ -127,6 +128,10 @@ function download_component()
             declare -r download_url="ftp://gcc.gnu.org/pub/gcc/infrastructure/gmp-6.1.0.tar.bz2"
             rm -rf gmp*.tar.*
             ;;
+        mpfr)
+            declare -r download_url="ftp://gcc.gnu.org/pub/gcc/infrastructure/mpfr-3.1.4.tar.bz2"
+            rm -rf mpfr*.tar.*
+            ;;
         *)
             error "$param_component is not a supported component, aborting"
             abort
@@ -175,6 +180,14 @@ function configure_component()
                 --enable-static \
                 --enable-cxx \
                 CPPFLAGS=-fexceptions \
+            "
+            ;;
+        mpfr)
+            declare -r configuration=" \
+                --prefix=$INSTALL_PREFIX \
+                --disable-shared \
+                --enable-static \
+                --with-gmp=$INSTALL_PREFIX \
             "
             ;;
         *)
