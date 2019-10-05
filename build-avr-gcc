@@ -44,6 +44,7 @@ function display_help_text()
     echo "SYNOPSIS"
     echo "    $MNEMONIC --help"
     echo "    $MNEMONIC --version"
+    echo "    $MNEMONIC [--jobs <jobs>] --install-prefix <install-prefix> --all"
     echo "    $MNEMONIC --download <component>"
     echo "    $MNEMONIC --extract <component>"
     echo "    $MNEMONIC --install-prefix <install-prefix> --configure <component>"
@@ -51,6 +52,9 @@ function display_help_text()
     echo "    $MNEMONIC [--jobs <jobs>] --check <component>"
     echo "    $MNEMONIC [--jobs <jobs>] --install <component>"
     echo "OPTIONS"
+    echo "    --all"
+    echo "        Download, extract, configure, build, check, and install all components"
+    echo "        while handling order dependencies."
     echo "    --build <component>"
     echo "        Build the specified component."
     echo "    --check <component>"
@@ -88,6 +92,8 @@ function display_help_text()
     echo "EXAMPLES"
     echo "    $MNEMONIC --help"
     echo "    $MNEMONIC --version"
+    echo "    $MNEMONIC --install-prefix ~/bin/avr-gcc --all"
+    echo "    $MNEMONIC --jobs 1 --install-prefix ~/bin/avr-gcc --all"
     echo "    $MNEMONIC --download gmp"
     echo "    $MNEMONIC --extract gmp"
     echo "    $MNEMONIC --install-prefix ~/bin/avr-gcc --configure gmp"
@@ -135,7 +141,7 @@ function download_component()
             ;;
         mpc)
             declare -r download_url="ftp://gcc.gnu.org/pub/gcc/infrastructure/mpc-1.0.3.tar.gz"
-            rm -rf mpfr*.tar.*
+            rm -rf mpc*.tar.*
             ;;
         *)
             error "$param_component is not a supported component, aborting"
@@ -324,6 +330,32 @@ function main()
 
                 JOBS="-j$1"
                 shift
+                ;;
+            --all)
+                download_component gmp
+                download_component mpfr
+                download_component mpc
+
+                extract_component gmp
+                extract_component mpfr
+                extract_component mpc
+
+                configure_component gmp
+                build_component gmp
+                check_component gmp
+                install_component gmp
+
+                configure_component mpfr
+                build_component mpfr
+                check_component mpfr
+                install_component mpfr
+
+                configure_component mpc
+                build_component mpc
+                check_component mpc
+                install_component mpc
+
+                exit
                 ;;
             --download)
                 declare -r action=download_component
