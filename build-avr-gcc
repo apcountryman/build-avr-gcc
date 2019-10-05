@@ -83,6 +83,7 @@ function display_help_text()
     echo "            gmp"
     echo "            mpfr"
     echo "            mpc"
+    echo "            isl"
     echo "    <install-prefix>"
     echo "        The install prefix. Must be a directory that exists prior to execution"
     echo "        of this script. <install-prefix>/bin must be in \$PATH prior to"
@@ -142,6 +143,10 @@ function download_component()
         mpc)
             declare -r download_url="ftp://gcc.gnu.org/pub/gcc/infrastructure/mpc-1.0.3.tar.gz"
             rm -rf mpc*.tar.*
+            ;;
+        isl)
+            declare -r download_url="ftp://gcc.gnu.org/pub/gcc/infrastructure/isl-0.18.tar.bz2"
+            rm -rf isl*.tar.*
             ;;
         *)
             error "$param_component is not a supported component, aborting"
@@ -208,6 +213,14 @@ function configure_component()
                 --enable-static \
                 --with-gmp=$INSTALL_PREFIX \
                 --with-mpfr=$INSTALL_PREFIX \
+            "
+            ;;
+        isl)
+            declare -r configuration=" \
+                --prefix=$INSTALL_PREFIX \
+                --disable-shared \
+                --enable-static \
+                --with-gmp-prefix=$INSTALL_PREFIX \
             "
             ;;
         *)
@@ -336,10 +349,12 @@ function main()
                 download_component gmp
                 download_component mpfr
                 download_component mpc
+                download_component isl
 
                 extract_component gmp
                 extract_component mpfr
                 extract_component mpc
+                extract_component isl
 
                 configure_component gmp
                 build_component gmp
@@ -355,6 +370,11 @@ function main()
                 build_component mpc
                 check_component mpc
                 install_component mpc
+
+                configure_component isl
+                build_component isl
+                check_component isl
+                install_component isl
 
                 exit
                 ;;
