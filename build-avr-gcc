@@ -207,6 +207,7 @@ function configure_component()
                 --disable-shared \
                 --enable-static \
                 --with-gmp=$INSTALL_PREFIX \
+                --with-mpfr=$INSTALL_PREFIX \
             "
             ;;
         *)
