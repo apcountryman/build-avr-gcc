@@ -1,0 +1,498 @@
+#!/usr/bin/env bash
+
+# build-avr-gcc
+#
+# Copyright 2019 Andrew Countryman <apcountryman@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+# file except in compliance with the License. You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the specific language governing
+# permissions and limitations under the License.
+
+# File: build-avr-gcc
+# Description: avr-gcc build script.
+
+function abort()
+{
+    exit 1
+}
+
+function error()
+{
+    local param_message; declare -r param_message="$1"
+
+    ( >&2 echo "$MNEMONIC: $param_message" )
+}
+
+function message()
+{
+    local param_content; declare -r param_content="$1"
+
+    echo -n "$MNEMONIC: $param_content"
+}
+
+function display_help_text()
+{
+    echo "NAME"
+    echo "    $MNEMONIC - Build avr-gcc from gmp 6.1.0, mpfr 3.1.4, mpc 1.0.3, isl 0.18,"
+    echo "        binutils 2.32, gcc 8.3.0, and avr-libc 2.0.0."
+    echo "SYNOPSIS"
+    echo "    $MNEMONIC --help"
+    echo "    $MNEMONIC --version"
+    echo "    $MNEMONIC [--jobs <jobs>] --install-prefix <install-prefix> --all"
+    echo "    $MNEMONIC --download <component>"
+    echo "    $MNEMONIC --extract <component>"
+    echo "    $MNEMONIC --install-prefix <install-prefix> --configure <component>"
+    echo "    $MNEMONIC [--jobs <jobs>] --build <component>"
+    echo "    $MNEMONIC [--jobs <jobs>] --check <component>"
+    echo "    $MNEMONIC [--jobs <jobs>] --install <component>"
+    echo "OPTIONS"
+    echo "    --all"
+    echo "        Download, extract, configure, build, check, and install all components"
+    echo "        while handling order dependencies."
+    echo "    --build <component>"
+    echo "        Build the specified component."
+    echo "    --check <component>"
+    echo "        Check the specified component."
+    echo "    --configure <component>"
+    echo "        Configure the specified component."
+    echo "    --download <component>"
+    echo "        Download the specified component."
+    echo "    --extract <component>"
+    echo "        Extract the specified component."
+    echo "    --help"
+    echo "        Display this help text."
+    echo "    --install <component>"
+    echo "        Install the specified component."
+    echo "    --install-prefix <install-prefix>"
+    echo "        Use the specified install prefix."
+    echo "    --jobs <jobs>"
+    echo "        Specify the number of make jobs to use when building, checking, and/or"
+    echo "        installing. If the number of jobs to use is not specified, nproc - 1"
+    echo "        jobs will be used."
+    echo "    --version"
+    echo "        Display the version of this script."
+    echo "    <component>"
+    echo "        The component to to execute an action for. The following components are"
+    echo "        supported:"
+    echo "            gmp"
+    echo "            mpfr"
+    echo "            mpc"
+    echo "            isl"
+    echo "            binutils"
+    echo "            gcc"
+    echo "            avr-libc"
+    echo "    <install-prefix>"
+    echo "        The install prefix. Must be a directory that exists prior to execution"
+    echo "        of this script. <install-prefix>/bin must be in \$PATH prior to"
+    echo "        execution of this script."
+    echo "    <jobs>"
+    echo "        The number of make jobs to use."
+    echo "EXAMPLES"
+    echo "    $MNEMONIC --help"
+    echo "    $MNEMONIC --version"
+    echo "    $MNEMONIC --install-prefix ~/bin/avr-gcc --all"
+    echo "    $MNEMONIC --jobs 1 --install-prefix ~/bin/avr-gcc --all"
+    echo "    $MNEMONIC --download gmp"
+    echo "    $MNEMONIC --extract gmp"
+    echo "    $MNEMONIC --install-prefix ~/bin/avr-gcc --configure gmp"
+    echo "    $MNEMONIC --build gmp"
+    echo "    $MNEMONIC --jobs 1 --build gmp"
+    echo "    $MNEMONIC --check gmp"
+    echo "    $MNEMONIC --jobs 1 --check gmp"
+    echo "    $MNEMONIC --install gmp"
+    echo "    $MNEMONIC --jobs 1 --install gmp"
+}
+
+function display_version()
+{
+    local version; declare -r version=$( git describe --always --dirty --broken )
+
+    echo "$MNEMONIC, version $version"
+}
+
+function download_component()
+{
+    local param_component; declare -r param_component="$1"
+
+    if [[ ! -d "$BUILD_DIRECTORY" ]]; then
+        if ! mkdir -p "$BUILD_DIRECTORY"; then
+            error "build directory creation failure, aborting"
+            abort
+        fi
+    fi
+
+    if ! cd "$BUILD_DIRECTORY"; then
+        error "unable to enter build directory, aborting"
+        abort
+    fi
+
+    local download_url;
+
+    case $param_component in
+        gmp)
+            declare -r download_url="ftp://gcc.gnu.org/pub/gcc/infrastructure/gmp-6.1.0.tar.bz2"
+            rm -f gmp*.tar.*
+            ;;
+        mpfr)
+            declare -r download_url="ftp://gcc.gnu.org/pub/gcc/infrastructure/mpfr-3.1.4.tar.bz2"
+            rm -f mpfr*.tar.*
+            ;;
+        mpc)
+            declare -r download_url="ftp://gcc.gnu.org/pub/gcc/infrastructure/mpc-1.0.3.tar.gz"
+            rm -f mpc*.tar.*
+            ;;
+        isl)
+            declare -r download_url="ftp://gcc.gnu.org/pub/gcc/infrastructure/isl-0.18.tar.bz2"
+            rm -f isl*.tar.*
+            ;;
+        binutils)
+            declare -r download_url="ftp://gcc.gnu.org/pub/binutils/releases/binutils-2.32.tar.xz"
+            rm -f binutils*.tar.*
+            ;;
+        gcc)
+            declare -r download_url="ftp://gcc.gnu.org/pub/gcc/releases/gcc-8.3.0/gcc-8.3.0.tar.xz"
+            rm -f gcc*.tar.*
+            ;;
+        avr-libc)
+            declare -r download_url="http://download.savannah.gnu.org/releases/avr-libc/avr-libc-2.0.0.tar.bz2"
+            rm -f avr-libc*.tar.*
+            ;;
+        *)
+            error "$param_component is not a supported component, aborting"
+            abort
+            ;;
+    esac
+
+    if ! wget "$download_url"; then
+        error "$param_component download failure, aborting"
+        abort
+    fi
+}
+
+function extract_component()
+{
+    local param_component; declare -r param_component="$1"
+
+    if ! cd "$BUILD_DIRECTORY"; then
+        error "unable to enter build directory, aborting"
+        abort
+    fi
+
+    rm -rf "$param_component"*/
+
+    if ! tar -xf "$param_component"*.tar.*; then
+        error "$param_component extraction failure, aborting"
+        abort
+    fi
+}
+
+function configure_component()
+{
+    local param_component; declare -r param_component="$1"
+
+    if [[ -z "$INSTALL_PREFIX" ]]; then
+        error "install prefix not specified, aborting"
+        abort
+    fi
+
+    local configuration;
+
+    case $param_component in
+        gmp)
+            declare -r configuration=" \
+                --prefix=$INSTALL_PREFIX \
+                --disable-shared \
+                --enable-static \
+                --enable-cxx \
+                CPPFLAGS=-fexceptions \
+            "
+            ;;
+        mpfr)
+            declare -r configuration=" \
+                --prefix=$INSTALL_PREFIX \
+                --disable-shared \
+                --enable-static \
+                --with-gmp=$INSTALL_PREFIX \
+            "
+            ;;
+        mpc)
+            declare -r configuration=" \
+                --prefix=$INSTALL_PREFIX \
+                --disable-shared \
+                --enable-static \
+                --with-gmp=$INSTALL_PREFIX \
+                --with-mpfr=$INSTALL_PREFIX \
+            "
+            ;;
+        isl)
+            declare -r configuration=" \
+                --prefix=$INSTALL_PREFIX \
+                --disable-shared \
+                --enable-static \
+                --with-gmp-prefix=$INSTALL_PREFIX \
+            "
+            ;;
+        binutils)
+            declare -r configuration=" \
+                --prefix=$INSTALL_PREFIX \
+                --disable-shared \
+                --enable-static \
+                --target=avr \
+                --disable-nls \
+                --with-dwarf2 \
+                --with-gmp=$INSTALL_PREFIX \
+                --with-mpfr=$INSTALL_PREFIX \
+                --with-mpc=$INSTALL_PREFIX \
+                --with-isl=$INSTALL_PREFIX \
+            "
+            ;;
+        gcc)
+            declare -r configuration=" \
+                --prefix=$INSTALL_PREFIX \
+                --disable-shared \
+                --enable-static \
+                --target=avr \
+                --enable-languages=c,c++ \
+                --disable-nls \
+                --disable-libssp \
+                --with-dwarf2 \
+                --with-gmp=$INSTALL_PREFIX \
+                --with-mpfr=$INSTALL_PREFIX \
+                --with-mpc=$INSTALL_PREFIX \
+                --with-isl=$INSTALL_PREFIX \
+            "
+            ;;
+        avr-libc)
+            declare -r configuration=" \
+                --prefix=$INSTALL_PREFIX \
+                --host=avr \
+            "
+            ;;
+        *)
+            error "$param_component is not a supported component, aborting"
+            abort
+            ;;
+    esac
+
+    if ! cd "$BUILD_DIRECTORY"/"$param_component"*/; then
+        error "unable to enter $param_component directory, aborting"
+        abort
+    fi
+
+    rm -rf build
+
+    if ! mkdir build; then
+        error "$param_component build_directory creation failure, aborting"
+        abort
+    fi
+
+    if ! cd "$BUILD_DIRECTORY"/"$param_component"*/build; then
+        error "unable to enter $param_component build directory, aborting"
+        abort
+    fi
+
+    if ! ../configure $configuration; then
+        error "$param_component configuration failure, aborting"
+        abort
+    fi
+}
+
+function build_component()
+{
+    local param_component; declare -r param_component="$1"
+
+    if ! cd "$BUILD_DIRECTORY"/"$param_component"*/build; then
+        error "unable to enter $param_component build directory, aborting"
+        abort
+    fi
+
+    if ! make "$JOBS"; then
+        error "$param_component build failure, aborting"
+        abort
+    fi
+}
+
+function check_component()
+{
+    local param_component; declare -r param_component="$1"
+
+    if ! cd "$BUILD_DIRECTORY"/"$param_component"*/build; then
+        error "unable to enter $param_component build directory, aborting"
+        abort
+    fi
+
+    if ! make "$JOBS" check; then
+        error "$param_component check failure, aborting"
+        abort
+    fi
+}
+
+function install_component()
+{
+    local param_component; declare -r param_component="$1"
+
+    if ! cd "$BUILD_DIRECTORY"/"$param_component"*/build; then
+        error "unable to enter $param_component build directory, aborting"
+        abort
+    fi
+
+    if ! make "$JOBS" install; then
+        error "$param_component install failure, aborting"
+        abort
+    fi
+}
+
+function main()
+{
+    declare -r SCRIPT=$( readlink -f $0 )
+    declare -r REPOSITORY=$( dirname $SCRIPT )
+    declare -r MNEMONIC=$( basename $SCRIPT )
+
+    declare -r BUILD_DIRECTORY="$REPOSITORY"/build
+
+    JOBS="-j$(( $( nproc ) - 1 ))"
+
+    local action;
+
+    while true; do
+        if [[ $# -eq 0 ]]; then
+            error "invalid usage, aborting"
+            abort
+        fi
+
+        local argument; argument="$1"
+        shift
+
+        case $argument in
+            --help)
+                display_help_text
+                exit
+                ;;
+            --version)
+                display_version
+                exit
+                ;;
+            --install-prefix)
+                if [[ $# -eq 0 ]]; then
+                    error "install prefix not specified, aborting"
+                    abort
+                fi
+
+                declare -r INSTALL_PREFIX="$1"
+                shift
+                ;;
+            --jobs)
+                if [[ $# -eq 0 ]]; then
+                    error "make job count not specified, aborting"
+                    abort
+                fi
+
+                JOBS="-j$1"
+                shift
+                ;;
+            --all)
+                download_component gmp
+                download_component mpfr
+                download_component mpc
+                download_component isl
+                download_component binutils
+                download_component gcc
+                download_component avr-libc
+
+                extract_component gmp
+                extract_component mpfr
+                extract_component mpc
+                extract_component isl
+                extract_component binutils
+                extract_component gcc
+                extract_component avr-libc
+
+                configure_component gmp
+                build_component gmp
+                check_component gmp
+                install_component gmp
+
+                configure_component mpfr
+                build_component mpfr
+                check_component mpfr
+                install_component mpfr
+
+                configure_component mpc
+                build_component mpc
+                check_component mpc
+                install_component mpc
+
+                configure_component isl
+                build_component isl
+                check_component isl
+                install_component isl
+
+                configure_component binutils
+                build_component binutils
+                check_component binutils
+                install_component binutils
+
+                configure_component gcc
+                build_component gcc
+                check_component gcc
+                install_component gcc
+
+                configure_component avr-libc
+                build_component avr-libc
+                check_component avr-libc
+                install_component avr-libc
+
+                exit
+                ;;
+            --download)
+                declare -r action=download_component
+                break
+                ;;
+            --extract)
+                declare -r action=extract_component
+                break
+                ;;
+            --configure)
+                declare -r action=configure_component
+                break;
+                ;;
+            --build)
+                declare -r action=build_component
+                break;
+                ;;
+            --check)
+                declare -r action=check_component
+                break;
+                ;;
+            --install)
+                declare -r action=install_component
+                break;
+                ;;
+            --*)
+                ;&
+            -*)
+                error "'$argument' is not a supported option, aborting"
+                abort
+                ;;
+            *)
+                error "'$argument' is not a valid argument, aborting"
+                abort
+                ;;
+        esac
+    done
+
+    if [[ $# -eq 0 ]]; then
+        error "component not specified, aborting"
+        abort
+    fi
+
+    "$action" "$1"
+}
+
+main "$@"
