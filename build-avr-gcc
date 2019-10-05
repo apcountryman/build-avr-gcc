@@ -85,6 +85,7 @@ function display_help_text()
     echo "            mpc"
     echo "            isl"
     echo "            binutils"
+    echo "            gcc"
     echo "    <install-prefix>"
     echo "        The install prefix. Must be a directory that exists prior to execution"
     echo "        of this script. <install-prefix>/bin must be in \$PATH prior to"
@@ -150,8 +151,12 @@ function download_component()
             rm -f isl*.tar.*
             ;;
         binutils)
-            declare -r download_url="https://ftp.gnu.org/gnu/binutils/binutils-2.32.tar.xz"
+            declare -r download_url="ftp://gcc.gnu.org/pub/binutils/releases/binutils-2.32.tar.xz"
             rm -f binutils*.tar.*
+            ;;
+        gcc)
+            declare -r download_url="ftp://gcc.gnu.org/pub/gcc/releases/gcc-8.3.0/gcc-8.3.0.tar.xz"
+            rm -f gcc*.tar.*
             ;;
         *)
             error "$param_component is not a supported component, aborting"
@@ -235,6 +240,22 @@ function configure_component()
                 --enable-static \
                 --target=avr \
                 --disable-nls \
+                --with-dwarf2 \
+                --with-gmp=$INSTALL_PREFIX \
+                --with-mpfr=$INSTALL_PREFIX \
+                --with-mpc=$INSTALL_PREFIX \
+                --with-isl=$INSTALL_PREFIX \
+            "
+            ;;
+        gcc)
+            declare -r configuration=" \
+                --prefix=$INSTALL_PREFIX \
+                --disable-shared \
+                --enable-static \
+                --target=avr \
+                --enable-languages=c,c++ \
+                --disable-nls \
+                --disable-libssp \
                 --with-dwarf2 \
                 --with-gmp=$INSTALL_PREFIX \
                 --with-mpfr=$INSTALL_PREFIX \
@@ -370,12 +391,14 @@ function main()
                 download_component mpc
                 download_component isl
                 download_component binutils
+                download_component gcc
 
                 extract_component gmp
                 extract_component mpfr
                 extract_component mpc
                 extract_component isl
                 extract_component binutils
+                extract_component gcc
 
                 configure_component gmp
                 build_component gmp
@@ -401,6 +424,11 @@ function main()
                 build_component binutils
                 check_component binutils
                 install_component binutils
+
+                configure_component gcc
+                build_component gcc
+                check_component gcc
+                install_component gcc
 
                 exit
                 ;;
