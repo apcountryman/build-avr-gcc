@@ -84,6 +84,7 @@ function display_help_text()
     echo "            mpfr"
     echo "            mpc"
     echo "            isl"
+    echo "            binutils"
     echo "    <install-prefix>"
     echo "        The install prefix. Must be a directory that exists prior to execution"
     echo "        of this script. <install-prefix>/bin must be in \$PATH prior to"
@@ -134,19 +135,23 @@ function download_component()
     case $param_component in
         gmp)
             declare -r download_url="ftp://gcc.gnu.org/pub/gcc/infrastructure/gmp-6.1.0.tar.bz2"
-            rm -rf gmp*.tar.*
+            rm -f gmp*.tar.*
             ;;
         mpfr)
             declare -r download_url="ftp://gcc.gnu.org/pub/gcc/infrastructure/mpfr-3.1.4.tar.bz2"
-            rm -rf mpfr*.tar.*
+            rm -f mpfr*.tar.*
             ;;
         mpc)
             declare -r download_url="ftp://gcc.gnu.org/pub/gcc/infrastructure/mpc-1.0.3.tar.gz"
-            rm -rf mpc*.tar.*
+            rm -f mpc*.tar.*
             ;;
         isl)
             declare -r download_url="ftp://gcc.gnu.org/pub/gcc/infrastructure/isl-0.18.tar.bz2"
-            rm -rf isl*.tar.*
+            rm -f isl*.tar.*
+            ;;
+        binutils)
+            declare -r download_url="https://ftp.gnu.org/gnu/binutils/binutils-2.32.tar.xz"
+            rm -f binutils*.tar.*
             ;;
         *)
             error "$param_component is not a supported component, aborting"
@@ -221,6 +226,20 @@ function configure_component()
                 --disable-shared \
                 --enable-static \
                 --with-gmp-prefix=$INSTALL_PREFIX \
+            "
+            ;;
+        binutils)
+            declare -r configuration=" \
+                --prefix=$INSTALL_PREFIX \
+                --disable-shared \
+                --enable-static \
+                --target=avr \
+                --disable-nls \
+                --with-dwarf2 \
+                --with-gmp=$INSTALL_PREFIX \
+                --with-mpfr=$INSTALL_PREFIX \
+                --with-mpc=$INSTALL_PREFIX \
+                --with-isl=$INSTALL_PREFIX \
             "
             ;;
         *)
@@ -350,11 +369,13 @@ function main()
                 download_component mpfr
                 download_component mpc
                 download_component isl
+                download_component binutils
 
                 extract_component gmp
                 extract_component mpfr
                 extract_component mpc
                 extract_component isl
+                extract_component binutils
 
                 configure_component gmp
                 build_component gmp
@@ -375,6 +396,11 @@ function main()
                 build_component isl
                 check_component isl
                 install_component isl
+
+                configure_component binutils
+                build_component binutils
+                check_component binutils
+                install_component binutils
 
                 exit
                 ;;
