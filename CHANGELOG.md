@@ -8,3 +8,4 @@
 - Project license (Apache License, Version 2.0).
 - Project README skeleton.
 - Project CHANGELOG.
+- [Build script](https://github.com/apcountryman/build-avr-gcc/issues/1).
