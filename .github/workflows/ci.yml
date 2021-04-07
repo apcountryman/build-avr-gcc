@@ -13,5 +13,27 @@
 # KIND, either express or implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-# File: .gitignore
-# Description: Git ignore rules for the build-avr-gcc repository.
+# File: .github/workflows/ci.yml
+# Description: GitHub Actions CI workflow for the build-avr-gcc repository.
+
+name: CI
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+
+jobs:
+    analyze-static-shellcheck:
+        name: Analyze (static) - shellcheck
+        runs-on: ubuntu-20.04
+        steps:
+            - uses: actions/checkout@v2
+              with:
+                  submodules: recursive
+            - name: Analyze
+              shell: bash
+              run: ./ci/analyze --analyzer shellcheck
