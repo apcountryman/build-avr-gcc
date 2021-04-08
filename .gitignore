@@ -15,3 +15,6 @@
 
 # File: .gitignore
 # Description: Git ignore rules for the build-avr-gcc repository.
+
+# ignore the build directory
+build/

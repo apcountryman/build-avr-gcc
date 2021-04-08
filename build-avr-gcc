@@ -1,0 +1,341 @@
+#!/usr/bin/env bash
+
+# build-avr-gcc
+#
+# Copyright 2019, 2021, Andrew Countryman <apcountryman@gmail.com> and the build-avr-gcc
+# contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+# file except in compliance with the License. You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied. See the License for the specific language governing
+# permissions and limitations under the License.
+
+# File: build-avr-gcc
+# Description: avr-gcc build script.
+
+function error()
+{
+    local -r message="$1"
+
+    ( >&2 echo "$mnemonic: $message" )
+}
+
+function abort()
+{
+    if [[ "$#" -gt 0 ]]; then
+        local -r message="$1"
+
+        error "$message, aborting"
+    fi
+
+    exit 1
+}
+
+function display_help_text()
+{
+    echo "NAME"
+    echo "    $mnemonic - Build avr-gcc."
+    echo "SYNOPSIS"
+    echo "    $mnemonic --help"
+    echo "    $mnemonic --version"
+    echo "    $mnemonic --avr-gcc-version <avr-gcc-version>"
+    echo "        --install-prefix <install-prefix> [--jobs <jobs>]"
+    echo "OPTIONS"
+    echo "    --avr-gcc-version <avr-gcc-version>"
+    echo "        Specify the version of avr-gcc to build. The following avr-gcc versions"
+    echo "        are supported:"
+    echo "            8.3.0"
+    echo "    --help"
+    echo "        Display this help text."
+    echo "    --install-prefix <install-prefix>"
+    echo "        Specify the install prefix. '<install-prefix>/bin' must be in '\$PATH'"
+    echo "        prior to the execution of this script."
+    echo "    --jobs <jobs>"
+    echo "        Specify the number of build jobs to use when building. If the number of"
+    echo "        jobs is not specified, 'nproc - 1' jobs will be used."
+    echo "    --version"
+    echo "        Display the version of this script."
+    echo "EXAMPLES"
+    echo "    $mnemonic --help"
+    echo "    $mnemonic --version"
+    echo "    $mnemonic --avr-gcc-version 8.3.0 --install-prefix ~/bin/avr-gcc/8.3.0"
+    echo "    $mnemonic --avr-gcc-version 8.3.0 --install-prefix ~/bin/avr-gcc/8.3.0"
+    echo "        --jobs 1"
+}
+
+function display_version()
+{
+    echo "$mnemonic, version $version"
+}
+
+function download()
+{
+    case "$avr_gcc_version" in
+        8.3.0)
+            case "$component" in
+                gmp)
+                    local -r url="https://gcc.gnu.org/pub/gcc/infrastructure/gmp-6.1.0.tar.bz2"
+                    ;;
+                mpfr)
+                    local -r url="https://gcc.gnu.org/pub/gcc/infrastructure/mpfr-3.1.4.tar.bz2"
+                    ;;
+                mpc)
+                    local -r url="https://gcc.gnu.org/pub/gcc/infrastructure/mpc-1.0.3.tar.gz"
+                    ;;
+                isl)
+                    local -r url="https://gcc.gnu.org/pub/gcc/infrastructure/isl-0.18.tar.bz2"
+                    ;;
+                binutils)
+                    local -r url="https://gcc.gnu.org/pub/binutils/releases/binutils-2.32.tar.xz"
+                    ;;
+                gcc)
+                    local -r url="https://gcc.gnu.org/pub/gcc/releases/gcc-8.3.0/gcc-8.3.0.tar.xz"
+                    ;;
+                avr-libc)
+                    local -r url="http://download.savannah.gnu.org/releases/avr-libc/avr-libc-2.0.0.tar.bz2"
+                    ;;
+                *)
+                    abort "'$component' is not a supported component"
+            esac
+            ;;
+        *)
+            abort "'$avr_gcc_version' is not a supported avr-gcc version"
+            ;;
+    esac
+
+    if ! ( cd "$build_directory" && wget "$url" ); then
+        abort "$component download failure"
+    fi
+}
+
+function extract()
+{
+    if ! ( cd "$build_directory" && mkdir "$component" && tar -xf "$component"*.tar.* -C "$component" --strip-components 1 ); then
+        abort "$component extraction failure"
+    fi
+}
+
+function configure()
+{
+    case "$component" in
+        gmp)
+            local -r configuration=(
+                "--prefix=$install_prefix"
+                "--disable-shared"
+                "--disable-static"
+                "--enable-cxx"
+                "CPPFLAGS=-fexceptions"
+            )
+            ;;
+        mpfr)
+            local -r configuration=(
+                "--prefix=$install_prefix"
+                "--disable-shared"
+                "--disable-static"
+                "--with-gmp=$install_prefix"
+            )
+            ;;
+        mpc)
+            local -r configuration=(
+                "--prefix=$install_prefix"
+                "--disable-shared"
+                "--disable-static"
+                "--with-gmp=$install_prefix"
+                "--with-mpfr=$install_prefix"
+            )
+            ;;
+        isl)
+            local -r configuration=(
+                "--prefix=$install_prefix"
+                "--disable-shared"
+                "--disable-static"
+                "--with-gmp-prefix=$install_prefix"
+            )
+            ;;
+        binutils)
+            local -r configuration=(
+                "--prefix=$install_prefix"
+                "--disable-shared"
+                "--disable-static"
+                "--target=avr"
+                "--disable-nls"
+                "--with-dwarf2"
+                "--with-gmp=$install_prefix"
+                "--with-mpfr=$install_prefix"
+                "--with-mpc=$install_prefix"
+                "--with-isl=$install_prefix"
+            )
+            ;;
+        gcc)
+            local -r configuration=(
+                "--prefix=$install_prefix"
+                "--disable-shared"
+                "--disable-static"
+                "--target=avr"
+                "--enable-languages=c,c++"
+                "--disable-nls"
+                "--disable-libssp"
+                "--with-dwarf2"
+                "--with-gmp=$install_prefix"
+                "--with-mpfr=$install_prefix"
+                "--with-mpc=$install_prefix"
+                "--with-isl=$install_prefix"
+            )
+            ;;
+        avr-libc)
+            local -r configuration=(
+                "--prefix=$install_prefix"
+                "--host=avr"
+            )
+            ;;
+        *)
+            abort "'$component' is not a supported component"
+            ;;
+    esac
+
+    if ! ( mkdir "$component_build_directory" && cd "$component_build_directory" && ../configure "${configuration[@]}" ); then
+        abort "$component configuration failure"
+    fi
+}
+
+function build()
+{
+    if ! ( cd "$component_build_directory" && make -j "$build_jobs" ); then
+        abort "$component build failure"
+    fi
+}
+
+function check()
+{
+    if ! ( cd "$component_build_directory" && make -j "$build_jobs" check ); then
+        abort "$component build failure"
+    fi
+}
+
+function install()
+{
+    if ! ( cd "$component_build_directory" && make -j "$build_jobs" install ); then
+        abort "$component build failure"
+    fi
+}
+
+function build_avr_gcc()
+{
+    local -r build_directory="$repository/build"
+
+    rm -rf "$build_directory"
+
+    if ! mkdir "$build_directory"; then
+        abort "build directory creation failure"
+    fi
+
+    if ! mkdir -p "$install_prefix"; then
+        abort "install directory creation failure"
+    fi
+
+    local -r components=(
+        "gmp"
+        "mpfr"
+        "mpc"
+        "isl"
+        "binutils"
+        "gcc"
+        "avr-libc"
+    )
+
+    for component in "${components[@]}"; do
+        local component_build_directory="$build_directory/$component/build"
+
+        download
+        extract
+        configure
+        build
+        check
+        install
+    done
+}
+
+function main()
+{
+    local -r script=$( readlink -f "$0" )
+    local -r mnemonic=$( basename "$script" )
+    local -r repository=$( dirname "$script" )
+    local -r version=$( git -C "$repository" describe --match=none --always --dirty --broken )
+
+    while [[ "$#" -gt 0 ]]; do
+        local argument="$1"; shift
+
+        case "$argument" in
+            --avr-gcc-version)
+                if [[ -n "$avr_gcc_version" ]]; then
+                    abort "avr-gcc version already specified"
+                fi
+
+                if [[ "$#" -le 0 ]]; then
+                    abort "avr-gcc version not specified"
+                fi
+
+                local -r avr_gcc_version="$1"; shift
+                ;;
+            --help)
+                display_help_text
+                exit
+                ;;
+            --install-prefix)
+                if [[ -n "$install_prefix" ]]; then
+                    abort "install prefix already specified"
+                fi
+
+                if [[ "$#" -le 0 ]]; then
+                    abort "install prefix not specified"
+                fi
+
+                local -r install_prefix="$1"; shift
+                ;;
+            --jobs)
+                if [[ -n "$build_jobs" ]]; then
+                    abort "build job count already specified"
+                fi
+
+                if [[ "$#" -le 0 ]]; then
+                    abort "build job count not specified"
+                fi
+
+                local -r build_jobs="$1"; shift
+                ;;
+            --version)
+                display_version
+                exit
+                ;;
+            --*)
+                ;&
+            -*)
+                abort "'$argument' is not a supported option"
+                ;;
+            *)
+                abort "'$argument' is not a valid argument"
+                ;;
+        esac
+    done
+
+    if [[ -z "$avr_gcc_version" ]]; then
+        abort "'--avr-gcc-version' must be specified"
+    fi
+
+    if [[ -z "$build_jobs" ]]; then
+        local -r build_jobs=$(( $( nproc ) - 1 ))
+    fi
+
+    if [[ -z "$install_prefix" ]]; then
+        abort "'--install-prefix' must be specified"
+    fi
+
+    build_avr_gcc
+}
+
+main "$@"
