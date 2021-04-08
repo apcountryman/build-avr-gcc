@@ -318,7 +318,7 @@ function main()
                 abort "'$argument' is not a supported option"
                 ;;
             *)
-                selected_hooks+=( "$argument" )
+                abort "'$argument' is not a valid argument"
                 ;;
         esac
     done
