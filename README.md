@@ -14,6 +14,12 @@ SSH:
 git clone git@github.com:apcountryman/build-avr-gcc.git
 ```
 
+## Usage
+See the `avr-gcc` build script's help text for usage details.
+```shell
+./build-avr-gcc --help
+```
+
 ## Versioning
 Post version 0.1.0, `build-avr-gcc` will follow the [Abseil Live at Head
 philosophy](https://abseil.io/about/philosophy).
