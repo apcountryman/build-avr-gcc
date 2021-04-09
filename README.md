@@ -15,9 +15,11 @@ git clone git@github.com:apcountryman/build-avr-gcc.git
 ```
 
 ## Usage
-See the `avr-gcc` build script's help text for usage details.
+See the `avr-gcc` build script's help text and device family packs install script's help
+text for usage details.
 ```shell
 ./build-avr-gcc --help
+./install-device-family-packs --help
 ```
 
 ## Versioning
