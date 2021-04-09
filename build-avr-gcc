@@ -97,7 +97,7 @@ function download()
                     local -r url="https://gcc.gnu.org/pub/gcc/releases/gcc-8.3.0/gcc-8.3.0.tar.xz"
                     ;;
                 avr-libc)
-                    local -r url="http://download.savannah.gnu.org/releases/avr-libc/avr-libc-2.0.0.tar.bz2"
+                    local -r url="svn://svn.savannah.nongnu.org/avr-libc/trunk/avr-libc@2551"
                     ;;
                 *)
                     abort "'$component' is not a supported component"
@@ -108,15 +108,32 @@ function download()
             ;;
     esac
 
-    if ! ( cd "$build_directory" && wget "$url" ); then
-        abort "$component download failure"
+    if [[ "$component" == "avr-libc" ]]; then
+        if ! ( cd "$build_directory" && svn checkout "$url" "avr-libc" ); then
+            abort "avr-libc checkout failure"
+        fi
+    else
+        if ! ( cd "$build_directory" && wget "$url" ); then
+            abort "$component download failure"
+        fi
     fi
 }
 
 function extract()
 {
-    if ! ( cd "$build_directory" && mkdir "$component" && tar -xf "$component"*.tar.* -C "$component" --strip-components 1 ); then
-        abort "$component extraction failure"
+    if [[ "$component" != "avr-libc" ]]; then
+        if ! ( cd "$build_directory" && mkdir "$component" && tar -xf "$component"*.tar.* -C "$component" --strip-components 1 ); then
+            abort "$component extraction failure"
+        fi
+    fi
+}
+
+function bootstrap()
+{
+    if [[ "$component" == "avr-libc" ]]; then
+        if ! ( cd "$build_directory/avr-libc" && ./bootstrap ); then
+            abort "avr-libc bootstrap failure"
+        fi
     fi
 }
 
@@ -253,6 +270,7 @@ function build_avr_gcc()
 
         download
         extract
+        bootstrap
         configure
         build
         check
