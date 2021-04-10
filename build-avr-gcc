@@ -50,6 +50,7 @@ function display_help_text()
     echo "        Specify the version of avr-gcc to build. The following avr-gcc versions"
     echo "        are supported:"
     echo "            8.3.0"
+    echo "            9.3.0"
     echo "    --help"
     echo "        Display this help text."
     echo "    --install-prefix <install-prefix>"
@@ -65,6 +66,9 @@ function display_help_text()
     echo "    $mnemonic --version"
     echo "    $mnemonic --avr-gcc-version 8.3.0 --install-prefix ~/bin/avr-gcc/8.3.0"
     echo "    $mnemonic --avr-gcc-version 8.3.0 --install-prefix ~/bin/avr-gcc/8.3.0"
+    echo "        --jobs 1"
+    echo "    $mnemonic --avr-gcc-version 9.3.0 --install-prefix ~/bin/avr-gcc/9.3.0"
+    echo "    $mnemonic --avr-gcc-version 9.3.0 --install-prefix ~/bin/avr-gcc/9.3.0"
     echo "        --jobs 1"
 }
 
@@ -95,6 +99,33 @@ function download()
                     ;;
                 gcc)
                     local -r url="https://gcc.gnu.org/pub/gcc/releases/gcc-8.3.0/gcc-8.3.0.tar.xz"
+                    ;;
+                avr-libc)
+                    local -r url="svn://svn.savannah.nongnu.org/avr-libc/trunk/avr-libc@2551"
+                    ;;
+                *)
+                    abort "'$component' is not a supported component"
+            esac
+            ;;
+        9.3.0)
+            case "$component" in
+                gmp)
+                    local -r url="https://gcc.gnu.org/pub/gcc/infrastructure/gmp-6.1.0.tar.bz2"
+                    ;;
+                mpfr)
+                    local -r url="https://gcc.gnu.org/pub/gcc/infrastructure/mpfr-3.1.4.tar.bz2"
+                    ;;
+                mpc)
+                    local -r url="https://gcc.gnu.org/pub/gcc/infrastructure/mpc-1.0.3.tar.gz"
+                    ;;
+                isl)
+                    local -r url="https://gcc.gnu.org/pub/gcc/infrastructure/isl-0.18.tar.bz2"
+                    ;;
+                binutils)
+                    local -r url="https://gcc.gnu.org/pub/binutils/releases/binutils-2.34.tar.xz"
+                    ;;
+                gcc)
+                    local -r url="https://gcc.gnu.org/pub/gcc/releases/gcc-9.3.0/gcc-9.3.0.tar.xz"
                     ;;
                 avr-libc)
                     local -r url="svn://svn.savannah.nongnu.org/avr-libc/trunk/avr-libc@2551"
