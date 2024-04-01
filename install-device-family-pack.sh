@@ -35,27 +35,36 @@ function abort()
     exit 1
 }
 
+function validate_script()
+{
+    if ! shellcheck "$script"; then
+        abort
+    fi
+}
+
 function display_help_text()
 {
-    echo "NAME"
-    echo "    $mnemonic - Install an avr-gcc device family pack."
-    echo "SYNOPSIS"
-    echo "    $mnemonic --help"
-    echo "    $mnemonic --version"
-    echo "    $mnemonic --install-prefix <install-prefix> --family-pack <name> <version>"
-    echo "OPTIONS"
-    echo "    --family-pack <name> <version>"
-    echo "        Specify the name and version of the device family pack to install."
-    echo "    --help"
-    echo "        Display this help text."
-    echo "    --install-prefix <install-prefix>"
-    echo "        Specify avr-gcc's install prefix."
-    echo "    --version"
-    echo "        Display the version of this script."
-    echo "EXAMPLES"
-    echo "    $mnemonic --help"
-    echo "    $mnemonic --version"
-    echo "    $mnemonic --install-prefix ~/bin/avr-gcc/8.3.0 --family-pack ATmega 2.0.401"
+    printf "%b" \
+        "NAME\n" \
+        "    $mnemonic - Install an avr-gcc device family pack.\n" \
+        "SYNOPSIS\n" \
+        "    $mnemonic --help\n" \
+        "    $mnemonic --version\n" \
+        "    $mnemonic --install-prefix <install-prefix> --family-pack <name> <version>\n" \
+        "OPTIONS\n" \
+        "    --family-pack <name> <version>\n" \
+        "        Specify the name and version of the device family pack to install.\n" \
+        "    --help\n" \
+        "        Display this help text.\n" \
+        "    --install-prefix <install-prefix>\n" \
+        "        Specify avr-gcc's install prefix.\n" \
+        "    --version\n" \
+        "        Display the version of this script.\n" \
+        "EXAMPLES\n" \
+        "    $mnemonic --help\n" \
+        "    $mnemonic --version\n" \
+        "    $mnemonic --install-prefix ~/bin/avr-gcc/9.3.0 --family-pack ATmega 3.1.264\n" \
+        ""
 }
 
 function display_version()
@@ -83,6 +92,7 @@ function install_device_specs()
 
     local -r install_directory="$( find "$install_prefix/lib/gcc/avr" -type d -name "device-specs" )"
 
+    local device_spec
     for device_spec in "${device_specs[@]}"; do
         if ! cp "$device_spec" "$install_directory"; then
             abort "$device_spec install failure"
@@ -94,9 +104,11 @@ function install_device_startup_files_and_libraries()
 {
     local devices; mapfile -t devices < <( find "$build_directory/$family_pack/gcc/dev" -mindepth 1 -maxdepth 1 -type d ); readonly devices
 
+    local device
     for device in "${devices[@]}"; do
         local device_startup_files_and_libraries; mapfile -t device_startup_files_and_libraries < <( cd "$device" && find . -mindepth 1 -maxdepth 1 -type d ! -name "device-specs" )
 
+        local device_startup_file_and_library
         for device_startup_file_and_library in "${device_startup_files_and_libraries[@]}"; do
             if ! ( cd "$device" && tar -czvf "$device_startup_file_and_library.tar.gz" "$device_startup_file_and_library" && tar -xzvf "$device_startup_file_and_library.tar.gz" -C "$install_prefix/avr/lib" ); then
                 abort "$device $device_startup_file_and_library install failure"
@@ -110,6 +122,7 @@ function install_header_files()
 {
     local header_files; mapfile -t header_files < <( find "$build_directory/$family_pack/include/avr" -name "*.h" ); readonly header_files
 
+    local header_file
     for header_file in "${header_files[@]}"; do
         if ! cp "$header_file" "$install_prefix/avr/include/avr/"; then
             abort "$header_file install failure"
@@ -138,6 +151,9 @@ function main()
 {
     local -r script=$( readlink -f "$0" )
     local -r mnemonic=$( basename "$script" )
+
+    validate_script
+
     local -r repository=$( dirname "$script" )
     local -r version=$( git -C "$repository" describe --match=none --always --dirty --broken )
 

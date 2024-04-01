@@ -17,18 +17,6 @@
 
 # Description: Git pre-commit hook script.
 
-function message()
-{
-    local -r content="$1"
-
-    echo -n "$mnemonic: $content"
-}
-
-function errors_found()
-{
-    echo "error(s) found"
-}
-
 function error()
 {
     local -r message="$1"
@@ -47,26 +35,32 @@ function abort()
     exit 1
 }
 
+function validate_script()
+{
+    if ! shellcheck "$script"; then
+        abort
+    fi
+}
+
 function display_help_text()
 {
-    echo "NAME"
-    echo "    $mnemonic - Ensure:"
-    echo "        - Filenames are portable"
-    echo "        - No whitespace errors are present"
-    echo "        - No script errors are present"
-    echo "SYNOPSIS"
-    echo "    $mnemonic --help"
-    echo "    $mnemonic --version"
-    echo "    $mnemonic"
-    echo "OPTIONS"
-    echo "    --help"
-    echo "        Display this help text."
-    echo "    --version"
-    echo "        Display the version of this script."
-    echo "EXAMPLES"
-    echo "    $mnemonic --help"
-    echo "    $mnemonic --version"
-    echo "    $mnemonic"
+    printf "%b" \
+        "NAME\n" \
+        "    $mnemonic - Ensure commit preconditions are met.\n" \
+        "SYNOPSIS\n" \
+        "    $mnemonic --help\n" \
+        "    $mnemonic --version\n" \
+        "    $mnemonic" \
+        "OPTIONS\n" \
+        "    --help\n" \
+        "        Display this help text.\n" \
+        "    --version\n" \
+        "        Display the version of this script.\n" \
+        "EXAMPLES\n" \
+        "    $mnemonic --help\n" \
+        "    $mnemonic --version\n" \
+        "    $mnemonic\n" \
+        ""
 }
 
 function display_version()
@@ -74,55 +68,84 @@ function display_version()
     echo "$mnemonic, version $version"
 }
 
+function message()
+{
+    local -r content="$1"
+    local -r content_length=${#content}
+    local -r content_length_max=47
+    local -r ellipsis_count_min=3
+    local -r ellipsis_count=$(( content_length_max - content_length + ellipsis_count_min ))
+
+    if [[ "$ellipsis_count" -lt "$ellipsis_count_min" ]]; then
+        abort "increase content_length_max (ellipsis_count=$ellipsis_count)"
+    fi
+
+    local -r ellipsis=$( head -c "$ellipsis_count" < /dev/zero | tr '\0' '.' )
+
+    echo -n "$mnemonic: $content $ellipsis "
+}
+
+function message_status_no_errors_found()
+{
+    echo "none"
+}
+
+function message_status_errors_found()
+{
+    echo "error(s) found"
+}
+
 function ensure_filenames_are_portable()
 {
-    message "checking for non-portable (non-ASCII) filenames ... "
+    message "checking for non-portable (non-ASCII) filenames"
 
     if [[ $( git -C "$repository" diff --cached --name-only --diff-filter=A -z "$against" | LC_ALL=C tr -d '[ -~]\0' | wc -c ) != 0 ]]; then
-        errors_found
+        message_status_errors_found
         error "aborting commit due to non-portable (non-ASCII) filename(s)"
         abort
     fi
 
-    echo "none"
+    message_status_no_errors_found
 }
 
 function ensure_no_whitespace_errors_are_present()
 {
-    message "checking for whitespace errors .................... "
+    message "checking for whitespace errors"
 
     if ! git -C "$repository" diff-index --check --cached "$against" -- > "/dev/null" 2>&1; then
-        errors_found
+        message_status_errors_found
         error "aborting commit due to whitespace error(s), listed below"
         git -C "$repository" diff-index --check --cached "$against" --
         abort
     fi
 
-    echo "none"
+    message_status_no_errors_found
 }
 
 function ensure_no_script_errors_are_present()
 {
-    message "checking for script errors ........................ "
+    message "checking for script errors"
 
-    local scripts; mapfile -t scripts < <( git -C "$repository" ls-files | xargs -r -d '\n' -I '{}' find "$repository/{}" -executable ); readonly scripts
+    local scripts; mapfile -t scripts < <( git -C "$repository" ls-files '*.sh' | xargs -r -d '\n' -I '{}' find "$repository/{}" ); readonly scripts
 
     if ! shellcheck "${scripts[@]}" > "/dev/null" 2>&1; then
-        errors_found
+        message_status_errors_found
         error "aborting commit due to script error(s), listed below"
         shellcheck "${scripts[@]}"
         abort
     fi
 
-    echo "none"
+    message_status_no_errors_found
 }
 
 function main()
 {
     local -r script=$( readlink -f "$0" )
     local -r mnemonic=$( basename "$script" )
-    local -r hooks=$( dirname "$script" )
-    local -r repository=$( readlink -f "$hooks/../.." )
+
+    validate_script
+
+    local -r repository=$( readlink -f "$( dirname "$script" )/../.." )
     local -r version=$( git -C "$repository" describe --match=none --always --dirty --broken )
 
     while [[ "$#" -gt 0 ]]; do

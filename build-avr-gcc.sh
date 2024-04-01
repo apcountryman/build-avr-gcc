@@ -35,40 +35,49 @@ function abort()
     exit 1
 }
 
+function validate_script()
+{
+    if ! shellcheck "$script"; then
+        abort
+    fi
+}
+
 function display_help_text()
 {
-    echo "NAME"
-    echo "    $mnemonic - Build avr-gcc."
-    echo "SYNOPSIS"
-    echo "    $mnemonic --help"
-    echo "    $mnemonic --version"
-    echo "    $mnemonic --avr-gcc-version <avr-gcc-version>"
-    echo "        --install-prefix <install-prefix> [--jobs <jobs>]"
-    echo "OPTIONS"
-    echo "    --avr-gcc-version <avr-gcc-version>"
-    echo "        Specify the version of avr-gcc to build. The following avr-gcc versions"
-    echo "        are supported:"
-    echo "            8.3.0"
-    echo "            9.3.0"
-    echo "    --help"
-    echo "        Display this help text."
-    echo "    --install-prefix <install-prefix>"
-    echo "        Specify the install prefix. '<install-prefix>/bin' must be in '\$PATH'"
-    echo "        prior to the execution of this script."
-    echo "    --jobs <jobs>"
-    echo "        Specify the number of build jobs to use when building. If the number of"
-    echo "        jobs is not specified, 'nproc - 1' jobs will be used."
-    echo "    --version"
-    echo "        Display the version of this script."
-    echo "EXAMPLES"
-    echo "    $mnemonic --help"
-    echo "    $mnemonic --version"
-    echo "    $mnemonic --avr-gcc-version 8.3.0 --install-prefix ~/bin/avr-gcc/8.3.0"
-    echo "    $mnemonic --avr-gcc-version 8.3.0 --install-prefix ~/bin/avr-gcc/8.3.0"
-    echo "        --jobs 1"
-    echo "    $mnemonic --avr-gcc-version 9.3.0 --install-prefix ~/bin/avr-gcc/9.3.0"
-    echo "    $mnemonic --avr-gcc-version 9.3.0 --install-prefix ~/bin/avr-gcc/9.3.0"
-    echo "        --jobs 1"
+    printf "%b" \
+        "NAME\n" \
+        "    $mnemonic - Build avr-gcc.\n" \
+        "SYNOPSIS\n" \
+        "    $mnemonic --help\n" \
+        "    $mnemonic --version\n" \
+        "    $mnemonic --avr-gcc-version <avr-gcc-version>\n" \
+        "        --install-prefix <install-prefix> [--jobs <jobs>]\n" \
+        "OPTIONS\n" \
+        "    --avr-gcc-version <avr-gcc-version>\n" \
+        "        Specify the version of avr-gcc to build. The following avr-gcc versions\n" \
+        "        are supported:\n" \
+        "            8.3.0\n" \
+        "            9.3.0\n" \
+        "    --help\n" \
+        "        Display this help text.\n" \
+        "    --install-prefix <install-prefix>\n" \
+        "        Specify the install prefix. '<install-prefix>/bin' must be in '\$PATH'\n" \
+        "        prior to the execution of this script.\n" \
+        "    --jobs <jobs>\n" \
+        "        Specify the number of build jobs to use when building. If the number of\n" \
+        "        jobs is not specified, 'nproc - 1' jobs will be used.\n" \
+        "    --version\n" \
+        "        Display the version of this script.\n" \
+        "EXAMPLES\n" \
+        "    $mnemonic --help\n" \
+        "    $mnemonic --version\n" \
+        "    $mnemonic --avr-gcc-version 8.3.0 --install-prefix ~/bin/avr-gcc/8.3.0\n" \
+        "    $mnemonic --avr-gcc-version 8.3.0 --install-prefix ~/bin/avr-gcc/8.3.0\n" \
+        "        --jobs 1\n" \
+        "    $mnemonic --avr-gcc-version 9.3.0 --install-prefix ~/bin/avr-gcc/9.3.0\n" \
+        "    $mnemonic --avr-gcc-version 9.3.0 --install-prefix ~/bin/avr-gcc/9.3.0\n" \
+        "        --jobs 1\n" \
+        ""
 }
 
 function display_version()
@@ -295,6 +304,7 @@ function build_avr_gcc()
         "avr-libc"
     )
 
+    local component
     for component in "${components[@]}"; do
         local component_build_directory="$build_directory/$component/build"
 
@@ -312,6 +322,9 @@ function main()
 {
     local -r script=$( readlink -f "$0" )
     local -r mnemonic=$( basename "$script" )
+
+    validate_script
+
     local -r repository=$( dirname "$script" )
     local -r version=$( git -C "$repository" describe --match=none --always --dirty --broken )
 
