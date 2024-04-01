@@ -65,7 +65,7 @@ function display_version()
 
 function download()
 {
-    if ! ( cd "$build_directory" && wget "http://packs.download.atmel.com/$family_pack.atpack" ); then
+    if ! ( cd "$build_directory" && wget "https://packs.download.microchip.com/$family_pack.atpack" ); then
         abort "device family pack download failure"
     fi
 }
@@ -161,7 +161,7 @@ function main()
                 local -r family_pack_name="$1"; shift
                 local -r family_pack_version="$1"; shift
 
-                local -r family_pack="Atmel.${family_pack_name}_DFP.${family_pack_version}"
+                local -r family_pack="Microchip.${family_pack_name}_DFP.${family_pack_version}"
                 ;;
             --help)
                 display_help_text
