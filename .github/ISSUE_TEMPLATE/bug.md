@@ -9,7 +9,7 @@ assignees: ''
 
 Please describe the bug that was encountered.
 Please provide as much detail as possible, covering things such as:
-- The `build-avr-gcc` version (Git commit SHA)
+- The build-avr-gcc version (Git commit SHA)
 - Description of expected behavior, and observed behavior
 - Relevant code and steps required to reproduce the bug
 
