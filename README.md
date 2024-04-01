@@ -18,11 +18,11 @@ git clone git@github.com:apcountryman/build-avr-gcc.git
 
 ## Usage
 
-See the `build-avr-gcc` and `install-device-family-pack` scripts' help text for usage
-details.
+See the `build-avr-gcc.sh` and `install-device-family-pack.sh` scripts' help text for
+usage details.
 ```shell
-./build-avr-gcc --help
-./install-device-family-packs --help
+./build-avr-gcc.sh --help
+./install-device-family-packs.sh --help
 ```
 
 ## Versioning
@@ -37,11 +37,11 @@ workflow.
 
 ## Git Hooks
 
-To install this repository's Git hooks, run the `install` script located in the
+To install this repository's Git hooks, run the `install.sh` script located in the
 `git/hooks` directory.
-See the `install` script's help text for usage details.
+See the `install.sh` script's help text for usage details.
 ```shell
-$ ./git/hooks/install --help
+$ ./git/hooks/install.sh --help
 ```
 
 ## Code of Conduct
