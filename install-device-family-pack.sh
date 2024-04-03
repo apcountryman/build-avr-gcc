@@ -50,7 +50,8 @@ function display_help_text()
         "SYNOPSIS\n" \
         "    $mnemonic --help\n" \
         "    $mnemonic --version\n" \
-        "    $mnemonic --install-prefix <install-prefix> --family-pack <name> <version>\n" \
+        "    $mnemonic --install-prefix <install-prefix>\n" \
+        "        --family-pack <name> <version>\n" \
         "OPTIONS\n" \
         "    --family-pack <name> <version>\n" \
         "        Specify the name and version of the device family pack to install.\n" \
@@ -63,7 +64,8 @@ function display_help_text()
         "EXAMPLES\n" \
         "    $mnemonic --help\n" \
         "    $mnemonic --version\n" \
-        "    $mnemonic --install-prefix ~/bin/avr-gcc/9.3.0 --family-pack ATmega 3.1.264\n" \
+        "    $mnemonic --install-prefix ~/bin/avr-gcc/9.3.0\n" \
+        "        --family-pack ATmega 3.1.264\n" \
         ""
 }
 
