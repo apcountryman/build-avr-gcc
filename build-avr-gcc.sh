@@ -54,18 +54,18 @@ function display_help_text()
         "        --install-prefix <install-prefix> [--jobs <jobs>]\n" \
         "OPTIONS\n" \
         "    --avr-gcc-version <avr-gcc-version>\n" \
-        "        Specify the version of avr-gcc to build. The following avr-gcc versions\n" \
-        "        are supported:\n" \
+        "        Specify the version of avr-gcc to build. The following avr-gcc\n" \
+        "        versions are supported:\n" \
         "            8.3.0\n" \
         "            9.3.0\n" \
         "    --help\n" \
         "        Display this help text.\n" \
         "    --install-prefix <install-prefix>\n" \
-        "        Specify the install prefix. '<install-prefix>/bin' must be in '\$PATH'\n" \
-        "        prior to the execution of this script.\n" \
+        "        Specify the install prefix. '<install-prefix>/bin' must be in\n" \
+        "        '\$PATH' prior to the execution of this script.\n" \
         "    --jobs <jobs>\n" \
-        "        Specify the number of build jobs to use when building. If the number of\n" \
-        "        jobs is not specified, 'nproc - 1' jobs will be used.\n" \
+        "        Specify the number of build jobs to use when building. If the number\n" \
+        "        of jobs is not specified, 'nproc - 1' jobs will be used.\n" \
         "    --version\n" \
         "        Display the version of this script.\n" \
         "EXAMPLES\n" \
